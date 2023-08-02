@@ -1,0 +1,92 @@
+MainWidget:
+
+<MainWidget>:
+    orientation: "horizontal"
+    spacing: '10dp'
+    padding: '10dp'
+
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 0.9
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    # Network
+    Widget:
+        id: network_widget
+        on_touch_down: 
+            root.on_network_widget_touch(*args)
+        on_touch_move:
+            root.on_network_widget_grab(*args)
+        on_touch_up:
+            root.on_network_widget_release(*args)
+        # on scroll, zoom in/out
+        on_touch_down:
+            logic = True
+            if not self.collide_point(*args[1].pos): logic = False
+            if args[1].button == 'scrolldown' and logic: root.zoom_in(*args)
+            elif args[1].button == 'scrollup' and logic: root.zoom_out(*args)
+
+
+    # Menu bar
+    BoxLayout:
+        size_hint: None, 1
+        width: '200dp'
+        canvas.before:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        orientation: 'vertical'
+        spacing: '10dp'
+        padding: '10dp'
+        direction: 'tb-lr'
+
+        ToggleButton:
+            id: router_button
+            text: 'Router'
+            on_press: 
+                device_button.state = 'normal'
+                root.select_router(self.state)
+            size_hint: 1, None
+            height: '48dp'
+
+        ToggleButton:
+            id: device_button
+            text: 'End Device'
+            on_press: 
+                router_button.state = 'normal'
+                root.select_end_device(self.state)
+            size_hint: 1, None
+            height: '48dp'
+        
+        Label:
+            text:'Devices'
+            size_hint: 1, 1
+        
+        Button:
+            text: 'Clear'
+            on_press: 
+                root.clear_network()
+            size_hint: 1, None
+            height: '48dp'
+        
+        Button:
+            text: 'Run'
+            on_press: root.run_network()
+            size_hint: 1, None
+            height: '48dp'
+            
+            background_down: self.background_normal
+            canvas.before:
+                Color:
+                    rgba: 0, 0, 1, 0.85
+                BoxShadow:
+                    pos: self.pos
+                    size: self.size
+                    offset: 0, -10
+                    spread_radius: -20, -20
+                    border_radius: 10, 10, 10, 10
+                    blur_radius: 40 if self.state == "normal" else 30
