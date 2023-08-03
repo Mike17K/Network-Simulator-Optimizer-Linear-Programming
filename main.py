@@ -1,5 +1,6 @@
 
 from MainPackage.Router.Router import Router
+from MainPackage.Interface.Interface import Interface
 
 # Import required modules from Kivy
 from kivy.app import App
@@ -17,11 +18,15 @@ def gemerate_ipv4():
     
 class MyNetwork:
     items = []
+    connections = []
+    # view_pos = [0,0]
+    # scale = 1
 
 
 
 class MainWidget(BoxLayout):
     item_type = ""
+    link_devices = [None,None]
     def select_router(self,state):
         if state == "down":
             self.item_type = "Router"
@@ -42,8 +47,8 @@ class MainWidget(BoxLayout):
     
     def on_network_widget_touch(self,*args,**kwargs):
         network_widget = self.ids.network_widget
-        touch_x, touch_y = args[1].pos
-        # if its out of bounds, return
+        touch_x, touch_y = args[1].pos 
+        
         if touch_x < 0 or touch_x > network_widget.width or touch_y < 0 or touch_y > network_widget.height:
             return
         if args[1].button == "left":
@@ -53,26 +58,78 @@ class MainWidget(BoxLayout):
             self.ids.device_button.state = "normal"
             self.item_type = ""
 
-    def on_widget_press_callback(self,instance,*args):
-        pass
-        # network_widget = self.ids.network_widget
-        # here it needs conversion to global coords of the mouse event TODO
-        # pos = args[0].pos
-        # min_d = dp(100000)
-        # min_i = -1
+    def select_link(self,state):
+        if state == "down":
+            self.item_type = "Link"
+        else:
+            self.link_devices = [None,None]
+            self.item_type = ""
 
-        # # if the right click is pressed remove the widget
-        # if args[0].button == "right":
-        #     for index in range(len(MyNetwork.items)):
-        #         item_zip = MyNetwork.items[index]
-        #         widget = item_zip["widget"]
-        #         d = (widget.x - pos[0])**2 + (widget.y - pos[1])**2
-        #         if d < min_d:
-        #             min_d = d
-        #             min_i = index
-        #     if min_i == -1: return
-        #     wrapper = MyNetwork.items[min_i]["widget"]
-        #     network_widget.remove_widget(wrapper)
+    def on_widget_press_callback(self,instance,*args):
+        network_widget = self.ids.network_widget
+        pos = args[0].pos
+        min_d = dp(100000)
+        min_i = -1
+
+        for index in range(len(MyNetwork.items)):
+            item_zip = MyNetwork.items[index]
+            widget = item_zip["widget"]
+
+            # add a circle on widget.x and widget.y
+            d = (widget.x + widget.size[0]/2 - pos[0])**2 + (widget.y+ widget.size[1]/2 - pos[1])**2
+            if d < min_d:
+                min_d = d
+                min_i = index
+        if min_i == -1: return
+        if min_d > dp(200): return
+        selected_item = MyNetwork.items[min_i]
+
+        # if the right click is pressed remove the widget
+        if args[0].button == "right":
+            # del widget with right click
+            if self.item_type != "Link":
+                if selected_item["type"] == "router":
+                    wrapper = MyNetwork.items[min_i]["widget"]
+                    network_widget.remove_widget(wrapper)
+                    MyNetwork.items.pop(min_i)
+                elif selected_item["type"] == "end_device":
+                    wrapper = MyNetwork.items[min_i]["widget"]
+                    network_widget.remove_widget(wrapper)
+                    MyNetwork.items.pop(min_i)
+        elif args[0].button == "left":
+            # if the item type is link handle
+            if self.item_type == "Link":
+                if selected_item["type"] == "router":
+                    if self.link_devices[0] == None or self.link_devices[0] == selected_item:
+                        self.link_devices[0] = selected_item
+                        print("added first device")
+                        return
+                    elif self.link_devices[1] == None:
+                        self.link_devices[1] = selected_item
+                        print("added second device")
+                        print("linking devices...",end=" ")
+                        # link the devices here
+                        device1 = self.link_devices[0]["item"]
+                        device2 = self.link_devices[1]["item"]
+                    
+                        res = device1.link(device2)
+
+                        if res:
+                            print("ok!")
+                            # here add a strait line between the two devices
+                            MyNetwork.connections.append({"device1":self.link_devices[0],"device2":self.link_devices[1]})
+                        else:
+                            print("failed! Probably not enaph available ports" )
+
+                        self.link_devices = [None,None]
+                        return
+                elif selected_item["type"] == "end_device":
+                    print("End Device Selected for linking")
+            else:
+                if selected_item["type"] == "router":
+                    print("Router Selected")
+                elif selected_item["type"] == "end_device":
+                    print("End Device Selected")
 
     def handle_left_click(self, pos):
         network_widget = self.ids.network_widget
@@ -203,6 +260,7 @@ class MainWidget(BoxLayout):
             widget.x = item_zip["pos"][0] + dx
             widget.y = item_zip["pos"][1] + dy
             MyNetwork.items[index]["pos"] = (item_zip["pos"][0] + dx, item_zip["pos"][1] + dy)
+            MyNetwork.view_pos = [MyNetwork.view_pos[0] + dx/MyNetwork.scale, MyNetwork.view_pos[1] + dy/MyNetwork.scale]
 
     def zoom_in(self,*args):
         if self.item_type != "": return
@@ -217,6 +275,7 @@ class MainWidget(BoxLayout):
             widget.y = (item_zip["pos"][1] - center[1])*1.2 + center[1]
 
             MyNetwork.items[index]["pos"] = (widget.x,widget.y)
+            MyNetwork.scale *= 1.2
 
     def zoom_out(self,*args):
         if self.item_type != "": return
@@ -232,6 +291,7 @@ class MainWidget(BoxLayout):
             widget.y = (item_zip["pos"][1] - center[1])/1.2 + center[1]
 
             MyNetwork.items[index]["pos"] = (widget.x,widget.y)
+            MyNetwork.scale /= 1.2
 
     def run_network(self):
         print("Run Network")

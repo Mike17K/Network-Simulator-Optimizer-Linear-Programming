@@ -30,6 +30,17 @@ class Router:
             self.arp_table[ip] = generate_random_mac_address()
             interface = Interface(ip, mac = self.arp_table[ip])
             self.interfaces[self.arp_table[ip]] = interface
+
+    def link(self, device):
+        '''
+        interface: interface object
+        '''
+        for interface in self.interfaces.values():
+            for device_interface in device.interfaces.values():
+                if interface.link is None and device_interface.link is None:
+                    Interface.link(interface.ipv4, device_interface.ipv4)
+                    return True
+        return False
     
     def start(self):
         for interface in self.interfaces.values():

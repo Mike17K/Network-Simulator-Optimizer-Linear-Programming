@@ -49,6 +49,7 @@ MainWidget:
             text: 'Router'
             on_press: 
                 device_button.state = 'normal'
+                link_button.state = 'normal'
                 root.select_router(self.state)
             size_hint: 1, None
             height: '48dp'
@@ -58,8 +59,19 @@ MainWidget:
             text: 'End Device'
             on_press: 
                 router_button.state = 'normal'
+                link_button.state = 'normal'
                 root.select_end_device(self.state)
             size_hint: 1, None
+            height: '48dp'
+
+        ToggleButton:
+            id: link_button
+            text: 'Link'
+            on_press: 
+                router_button.state = 'normal'
+                device_button.state = 'normal'
+                root.select_link(self.state)
+            size_hint: 0.5, None
             height: '48dp'
         
         Label:
