@@ -38,9 +38,9 @@ class Router:
         for interface in self.interfaces.values():
             for device_interface in device.interfaces.values():
                 if interface.link is None and device_interface.link is None:
-                    Interface.link(interface.ipv4, device_interface.ipv4)
-                    return True
-        return False
+                    link = Interface.link(interface.ipv4, device_interface.ipv4)
+                    return link
+        return None
     
     def start(self):
         for interface in self.interfaces.values():

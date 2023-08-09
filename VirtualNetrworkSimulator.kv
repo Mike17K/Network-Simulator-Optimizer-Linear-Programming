@@ -86,6 +86,17 @@ MainWidget:
             height: '48dp'
         
         Button:
+            text: 'Export'
+            on_press: root.export_network()
+            size_hint: 1, None
+            height: '48dp'
+            
+            background_down: self.background_normal
+            canvas.before:
+                Color:
+                    rgba: 0, 0, 1, 0.85
+                    
+        Button:
             text: 'Run'
             on_press: root.run_network()
             size_hint: 1, None
