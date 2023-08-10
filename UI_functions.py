@@ -301,13 +301,12 @@ class MainWidget(BoxLayout):
             device2 = i["device2"]["item"]
             link = i["link"]
             
-            interface1 = link.endpoint1
-            interface2 = link.endpoint2
-
             cost = link.propagation_speed/10e6 # TODO make it better baced on the disttance
 
-            costs[device1.ipv4] = {}
-            costs[device2.ipv4] = {}
+            if device1.ipv4 not in costs.keys():
+                costs[device1.ipv4] = {}
+            if device2.ipv4 not in costs.keys():
+                costs[device2.ipv4] = {}
 
             costs[device1.ipv4][device2.ipv4] = cost
             costs[device2.ipv4][device1.ipv4] = cost
