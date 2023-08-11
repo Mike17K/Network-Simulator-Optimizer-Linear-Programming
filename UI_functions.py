@@ -7,7 +7,7 @@ from kivy.uix.label import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.metrics import dp
 from kivy.uix.image import Image
-from kivy.graphics import Rectangle, Color
+from kivy.graphics import Rectangle, Color, Line
 from kivy.uix.label import Label
 
 import random
@@ -29,15 +29,22 @@ class MainWidget(BoxLayout):
     link_devices = [None,None]
     def select_router(self,state):
         self.item_type = "Router" if state == "down" else ""
+        for w in MyNetwork.items:
+            w["widget"].canvas.before.clear()
     
     def select_end_device(self,state):
         self.item_type = "End Device" if state == "down" else ""
+        for w in MyNetwork.items:
+            w["widget"].canvas.before.clear()
 
     def clear_network(self):
         network_widget = self.ids.network_widget
         network_widget.clear_widgets()
         MyNetwork.items = []
         MyNetwork.connections = []
+        for w in MyNetwork.items:
+            w["widget"].canvas.before.clear()
+        network_widget.canvas.before.clear()
         print("Clear Network")      
     
     def on_network_widget_touch(self,*args,**kwargs):
@@ -59,6 +66,9 @@ class MainWidget(BoxLayout):
         else:
             self.link_devices = [None,None]
             self.item_type = ""
+            for w in MyNetwork.items:
+                w["widget"].canvas.before.clear()
+
 
     def on_widget_press_callback(self,instance,*args):
         network_widget = self.ids.network_widget
@@ -69,9 +79,12 @@ class MainWidget(BoxLayout):
         for index in range(len(MyNetwork.items)):
             item_zip = MyNetwork.items[index]
             widget = item_zip["widget"]
+            device = item_zip["item"]
 
             # add a circle on widget.x and widget.y
-            d = (widget.x + widget.size[0]/2 - pos[0])**2 + (widget.y+ widget.size[1]/2 - pos[1])**2
+            d = (widget.x + widget.size[0]/2 - pos[0])**2 + (widget.y + widget.size[1]/2 - pos[1])**2
+            if item_zip['type'] == "router":
+                d = (widget.x + widget.size[0]/2 - pos[0])**2 + (widget.y + widget.size[1]/2 - dp(40)+ dp(20*len(device.interfaces)) - pos[1])**2
             if d < min_d:
                 min_d = d
                 min_i = index
@@ -79,6 +92,7 @@ class MainWidget(BoxLayout):
         if min_d > dp(200): return
         selected_item = MyNetwork.items[min_i]
 
+        print(min_d)
         # if the right click is pressed remove the widget
         if args[0].button == "right":
             # del widget with right click
@@ -98,12 +112,22 @@ class MainWidget(BoxLayout):
                     if self.link_devices[0] == None or self.link_devices[0] == selected_item:
                         self.link_devices[0] = selected_item
                         print("added first device")
+                        # make the image of the widget instance red
+
+                        selected_item["widget"].canvas.before.clear()
+                        with selected_item["widget"].canvas.before:
+                            Color(1, 0, 0, 1)
+                            Rectangle(pos=(selected_item["widget"].pos[0]+dp(60),selected_item["widget"].pos[1]+dp(20) + dp(20*len(self.link_devices[0]['item'].interfaces))), size=(dp(40), dp(40)))
                         return
                     elif self.link_devices[1] == None:
                         self.link_devices[1] = selected_item
                         print("added second device")
                         print("linking devices...",end=" ")
                         # link the devices here
+                        # clear the backgrounds of the device 1 and 2
+                        self.link_devices[0]["widget"].canvas.before.clear()
+                        self.link_devices[1]["widget"].canvas.before.clear()
+                        
                         device1 = self.link_devices[0]["item"]
                         device2 = self.link_devices[1]["item"]
                     
@@ -111,7 +135,20 @@ class MainWidget(BoxLayout):
                         if link != None:
                             print("ok!")
                             # here add a strait line between the two devices
-                            MyNetwork.connections.append({"device1":self.link_devices[0],"device2":self.link_devices[1],"link":link})
+                            with network_widget.canvas.before:
+                                Color(0, 0, 0, 1)
+                                new_x_1 = self.link_devices[0]["widget"].pos[0] + dp(80)
+                                new_y_1 = self.link_devices[0]["widget"].pos[1] + dp(40) + dp(20*len(self.link_devices[0]['item'].interfaces))
+                                new_x_2 = self.link_devices[1]["widget"].pos[0] + dp(80)
+                                new_y_2 = self.link_devices[1]["widget"].pos[1] + dp(40) + dp(20*len(self.link_devices[1]['item'].interfaces))
+                                Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
+
+                            # add the link to the network
+                            MyNetwork.connections.append({
+                                "device1":self.link_devices[0],
+                                "device2":self.link_devices[1],
+                                "link":link
+                                })
                         else:
                             print("failed! Probably not enaph available ports" )
                         self.link_devices = [None,None]
@@ -132,7 +169,7 @@ class MainWidget(BoxLayout):
         if self.item_type == "Router":
             # generate router
             router_ipv4 = gemerate_ipv4()
-            interfaces = [gemerate_ipv4(), gemerate_ipv4()]
+            interfaces = [gemerate_ipv4() for _ in range(random.randint(1, 4))]
             router = Router(router_ipv4, interfaces)
 
             # create widget
@@ -140,7 +177,7 @@ class MainWidget(BoxLayout):
                 orientation='vertical',
                 size_hint=(None, None),
                 size=(dp(160), dp(160)),
-                pos=(pos[0] - dp(160) / 2, pos[1] - dp(160) / 2),
+                pos=(pos[0] - dp(160) / 2, pos[1] - dp(160) / 2 + dp(20) - dp(5*len(interfaces))),
                 on_touch_down= lambda instance, args=(network_widget): self.on_widget_press_callback(instance,args)
             )
 
@@ -229,13 +266,24 @@ class MainWidget(BoxLayout):
 
         network_widget = self.ids.network_widget
         network_widget.x = dx
-        network_widget.y = dy
+        network_widget.y = dy       
 
         for item_zip in MyNetwork.items:
             widget = item_zip["widget"]
             widget.x = item_zip["pos"][0] + dx
             widget.y = item_zip["pos"][1] + dy
 
+        self.ids.network_widget.canvas.before.clear()
+        for connection in MyNetwork.connections:
+            # {"points":[self.link_devices[0]["widget"].pos[0]+dp(80),self.link_devices[0]["widget"].pos[1]+dp(80),self.link_devices[1]["widget"].pos[0]+dp(80),self.link_devices[1]["widget"].pos[1]+dp(80)], "width":dp(2)}
+            with self.ids.network_widget.canvas.before:
+                Color(0, 0, 0, 1)
+                new_x_1 = connection['device1']["widget"].pos[0] + dp(80)
+                new_y_1 = connection['device1']["widget"].pos[1] + dp(40) + dp(20*len(connection['device1']['item'].interfaces))
+                new_x_2 = connection['device2']["widget"].pos[0] + dp(80)
+                new_y_2 = connection['device2']["widget"].pos[1] + dp(40) + dp(20*len(connection['device2']['item'].interfaces))
+                
+                Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
     def on_network_widget_release(self, *args, **kwargs):
         if self.item_type != "": return
 
@@ -255,9 +303,25 @@ class MainWidget(BoxLayout):
             MyNetwork.items[index]["pos"] = (item_zip["pos"][0] + dx, item_zip["pos"][1] + dy)
     def zoom_in(self,*args):
         if self.item_type != "": return
-
+        
+        for w in MyNetwork.items:
+            w["widget"].canvas.before.clear()
+    
         mouse_event = args[1]
         center = mouse_event.opos
+        
+        self.ids.network_widget.canvas.before.clear()
+        for connection in MyNetwork.connections:
+            # {"points":[self.link_devices[0]["widget"].pos[0]+dp(80),self.link_devices[0]["widget"].pos[1]+dp(80),self.link_devices[1]["widget"].pos[0]+dp(80),self.link_devices[1]["widget"].pos[1]+dp(80)], "width":dp(2)}
+            with self.ids.network_widget.canvas.before:
+                Color(0, 0, 0, 1)
+                new_x_1 = (connection['device1']["widget"].pos[0] - center[0])*1.2 + center[0] + dp(80)
+                new_y_1 = (connection['device1']["widget"].pos[1] - center[1])*1.2 + center[1] + dp(40) + dp(20*len(connection['device1']['item'].interfaces))
+                new_x_2 = (connection['device2']["widget"].pos[0] - center[0])*1.2 + center[0] + dp(80)
+                new_y_2 = (connection['device2']["widget"].pos[1] - center[1])*1.2 + center[1] + dp(40) + dp(20*len(connection['device2']['item'].interfaces))
+                
+                Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
+        
 
         for index in range(len(MyNetwork.items)):
             item_zip = MyNetwork.items[index]
@@ -274,6 +338,20 @@ class MainWidget(BoxLayout):
 
         mouse_event = args[1]
         center = mouse_event.opos
+
+        
+        self.ids.network_widget.canvas.before.clear()
+        for connection in MyNetwork.connections:
+            # {"points":[self.link_devices[0]["widget"].pos[0]+dp(80),self.link_devices[0]["widget"].pos[1]+dp(80),self.link_devices[1]["widget"].pos[0]+dp(80),self.link_devices[1]["widget"].pos[1]+dp(80)], "width":dp(2)}
+            with self.ids.network_widget.canvas.before:
+                Color(0, 0, 0, 1)
+                new_x_1 = (connection['device1']["widget"].pos[0] - center[0])/1.2 + center[0] + dp(80)
+                new_y_1 = (connection['device1']["widget"].pos[1] - center[1])/1.2 + center[1] + dp(40) + dp(20*len(connection['device1']['item'].interfaces))
+                new_x_2 = (connection['device2']["widget"].pos[0] - center[0])/1.2 + center[0] + dp(80)
+                new_y_2 = (connection['device2']["widget"].pos[1] - center[1])/1.2 + center[1] + dp(40) + dp(20*len(connection['device2']['item'].interfaces))
+                
+                Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
+            
 
         for index in range(len(MyNetwork.items)):
             item_zip = MyNetwork.items[index]
