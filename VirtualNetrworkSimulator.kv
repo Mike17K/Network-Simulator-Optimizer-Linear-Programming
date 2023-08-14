@@ -73,10 +73,53 @@ MainWidget:
                 root.select_link(self.state)
             size_hint: 0.5, None
             height: '48dp'
-        
+
+        BoxLayout:
+            size_hint: 1, None
+            height: '48dp'
+            spacing: '10dp'
+            padding: '10dp'
+            orientation: 'horizontal'
+            
+            Label:
+                text: 'Start IPv4'
+                size_hint: 1, 1
+                color: 0, 0, 0, 1
+            
+            TextInput:
+                id: start_ip
+                text: ''
+                size_hint: 2, None
+                height: '30dp'
+                multiline: False
+                font_size: '15dp'
+
+        BoxLayout:
+            size_hint: 1, None
+            height: '48dp'
+            spacing: '10dp'
+            padding: '10dp'
+            orientation: 'horizontal'
+            
+            Label:
+                text: 'End IPv4'
+                size_hint: 1, 1
+                color: 0, 0, 0, 1
+            
+            TextInput:
+                id: end_ip
+                text: ''
+                size_hint: 2, None
+                height: '30dp'
+                multiline: False
+                font_size: '15dp'
+
+        # spacing
         Label:
             text:'Devices'
             size_hint: 1, 1
+
+        
         
         Button:
             text: 'Clear'

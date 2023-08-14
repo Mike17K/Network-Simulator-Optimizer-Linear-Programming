@@ -2,6 +2,8 @@
 from MainPackage.Router.Router import Router
 from MainPackage.Interface.Interface import Interface
 
+from analyzeExportConnections import solve
+
 # Import required modules from Kivy
 from kivy.uix.label import Widget
 from kivy.uix.boxlayout import BoxLayout
@@ -12,6 +14,7 @@ from kivy.uix.label import Label
 
 import random
 import numpy as np
+import json
 
 def gemerate_ipv4():
     return ".".join(map(str, (random.randint(0, 255) for _ in range(4))))
@@ -19,6 +22,7 @@ def gemerate_ipv4():
 class MyNetwork:
     items = []
     connections = []
+    consts = {}
     # view_pos = [0,0]
     # scale = 1
 
@@ -69,7 +73,6 @@ class MainWidget(BoxLayout):
             for w in MyNetwork.items:
                 w["widget"].canvas.before.clear()
 
-
     def on_widget_press_callback(self,instance,*args):
         network_widget = self.ids.network_widget
         pos = args[0].pos
@@ -101,6 +104,11 @@ class MainWidget(BoxLayout):
                     wrapper = MyNetwork.items[min_i]["widget"]
                     network_widget.remove_widget(wrapper)
                     MyNetwork.items.pop(min_i)
+                    # delete all connections related to this router
+                    for i in range(len(MyNetwork.connections)-1,-1,-1):
+                        if MyNetwork.connections[i]["device1"]['item'].ipv4 == selected_item['item'].ipv4 or MyNetwork.connections[i]["device2"]['item'].ipv4 == selected_item['item'].ipv4:
+                            MyNetwork.connections.pop(i)
+
                 elif selected_item["type"] == "end_device":
                     wrapper = MyNetwork.items[min_i]["widget"]
                     network_widget.remove_widget(wrapper)
@@ -284,6 +292,7 @@ class MainWidget(BoxLayout):
                 new_y_2 = connection['device2']["widget"].pos[1] + dp(40) + dp(20*len(connection['device2']['item'].interfaces))
                 
                 Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
+
     def on_network_widget_release(self, *args, **kwargs):
         if self.item_type != "": return
 
@@ -301,6 +310,7 @@ class MainWidget(BoxLayout):
             widget.x = item_zip["pos"][0] + dx
             widget.y = item_zip["pos"][1] + dy
             MyNetwork.items[index]["pos"] = (item_zip["pos"][0] + dx, item_zip["pos"][1] + dy)
+
     def zoom_in(self,*args):
         if self.item_type != "": return
         
@@ -330,7 +340,6 @@ class MainWidget(BoxLayout):
             widget.y = (item_zip["pos"][1] - center[1])*1.2 + center[1]
 
             MyNetwork.items[index]["pos"] = (widget.x,widget.y)
-            
 
     def zoom_out(self,*args):
         if self.item_type != "": return
@@ -361,13 +370,7 @@ class MainWidget(BoxLayout):
 
             MyNetwork.items[index]["pos"] = (widget.x,widget.y)
 
-    def run_network(self):
-        print("Run Network")
-
-    def export_network(self):
-        print("Export Network")
-
-        # generate a array of connections and costs
+    def generate_consts(self):
         number_of_routers = 0
         for i in MyNetwork.items:
             if i["type"] == "router":
@@ -388,5 +391,59 @@ class MainWidget(BoxLayout):
 
             costs[device1.ipv4][device2.ipv4] = cost
             costs[device2.ipv4][device1.ipv4] = cost
+        MyNetwork.consts = costs
 
-        print(costs)
+        set_of_ruters = set()
+        for key, value in costs.items():
+            set_of_ruters.add(key)
+            for key2, value2 in value.items():
+                set_of_ruters.add(key2)
+        keys = list(set_of_ruters)
+        
+        return costs , keys
+
+    def run_network(self):
+        costs, keys = self.generate_consts()
+        
+        start_ip = self.ids.start_ip.text
+        end_ip = self.ids.end_ip.text
+
+        if start_ip not in keys or end_ip not in keys:
+            print("Invalid IPs")
+            return
+        
+        res = solve(costs, start_ip, end_ip)
+        print("Run Network: ",res)
+
+        # color the connections of active links
+        path = res['path']
+        for conn in MyNetwork.connections:
+            ip_1 = conn["device1"]["item"].ipv4
+            ip_2 = conn["device2"]["item"].ipv4
+
+            for p in path:
+                ip_1_p = p['src']
+                ip_2_p = p['dest']
+
+                if (ip_1 == ip_1_p and ip_2 == ip_2_p) or (ip_1 == ip_2_p and ip_2 == ip_1_p):
+                    # color the connection
+                    with self.ids.network_widget.canvas.before:
+                        Color(0, 0.5, 1, 1)
+                        new_x_1 = (conn['device1']["widget"].pos[0])+ dp(80)
+                        new_y_1 = (conn['device1']["widget"].pos[1]) + dp(40) + dp(20*len(conn['device1']['item'].interfaces))
+                        new_x_2 = (conn['device2']["widget"].pos[0])+ dp(80)
+                        new_y_2 = (conn['device2']["widget"].pos[1]) + dp(40) + dp(20*len(conn['device2']['item'].interfaces))
+                        
+                        Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
+                
+
+    def export_network(self):
+        costs = self.generate_consts()
+
+        print("Export Network")
+        
+        # write the costs to export json file
+        with open('export.json', 'w') as fp:
+            json.dump(costs, fp)
+
+        

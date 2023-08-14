@@ -11,67 +11,82 @@ problem. The script is based on the following example:
 https://www.coin-or.org/PuLP/CaseStudies/a_transportation_problem.html
 
 '''
-connections = {'197.57.171.215': {'89.96.185.237': 20.0, '190.136.214.174': 20.0, '13.1.98.146': 20.0}, '89.96.185.237': {'197.57.171.215': 20.0, '13.1.98.146': 20.0}, '190.136.214.174': {'197.57.171.215': 20.0, '13.1.98.146': 20.0, '175.236.177.82': 20.0}, '13.1.98.146': {'197.57.171.215': 20.0, '89.96.185.237': 20.0, '190.136.214.174': 20.0}, '175.236.177.82': {'190.136.214.174': 20.0, '49.52.132.173': 
-20.0}, '49.52.132.173': {'175.236.177.82': 20.0, '58.244.111.239': 20.0, '124.245.190.41': 20.0}, '58.244.111.239': {'49.52.132.173': 20.0}, '124.245.190.41': {'49.52.132.173': 20.0}}
+connections ={'83.12.200.216': {'160.204.157.194': 20.0}, '160.204.157.194': {'83.12.200.216': 20.0, '196.116.12.205': 20.0, '206.122.126.4': 20.0}, '196.116.12.205': {'160.204.157.194': 20.0}, '206.122.126.4': {'160.204.157.194': 20.0, '121.186.96.234': 20.0}, '121.186.96.234': {'206.122.126.4': 20.0, '151.14.207.255': 20.0, '101.67.111.169': 20.0}, '151.14.207.255': {'121.186.96.234': 20.0}, '101.67.111.169': {'121.186.96.234': 20.0}}
 
-start_ip = '197.57.171.215'
-end_ip = '49.52.132.173'
+start_ip = '83.12.200.216'
+end_ip = '206.122.126.4'
 
-number_of_routers = len(connections.keys())
-keys = list(connections.keys())
+def solve(connections, start_ip, end_ip):
+    set_of_ruters = set()
+    for key, value in connections.items():
+        set_of_ruters.add(key)
+        for key2, value2 in value.items():
+            set_of_ruters.add(key2)
+    
+    number_of_routers = len(set_of_ruters)
 
-default_cost = 1000000  # Set a big default cost
+    keys = list(set_of_ruters)
 
-costs = np.full((number_of_routers, number_of_routers), default_cost)
+    default_cost = 1000000  # Set a big default cost
 
-for key, value in connections.items():
-    for key2, value2 in value.items():
-        costs[keys.index(key)][keys.index(key2)] = value2
+    costs = np.full((number_of_routers, number_of_routers), default_cost)
 
-prob = pulp.LpProblem("Shortest Path Problem", pulp.LpMinimize)
+    for key, value in connections.items():
+        for key2, value2 in value.items():
+            costs[keys.index(key)][keys.index(key2)] = value2
 
-rows = len(costs)
-cols = len(costs[0])
+    prob = pulp.LpProblem("Shortest Path Problem", pulp.LpMinimize)
 
-variables = [[pulp.LpVariable("x%s_%s" % (i+1, j+1), lowBound=0, upBound=1, cat='Binary') for j in range(cols)] for i in range(rows)]
+    rows = len(costs)
+    cols = len(costs[0])
 
-prob += pulp.lpSum([costs[i][j] * variables[i][j] for j in range(cols) for i in range(rows)])
+    variables = [[pulp.LpVariable("x%s_%s" % (i+1, j+1), lowBound=0, upBound=1, cat='Binary') for j in range(cols)] for i in range(rows)]
 
-for i in range(rows):
-    prob += pulp.lpSum([variables[i][j] for j in range(cols)]) <= 1
+    prob += pulp.lpSum([costs[i][j] * variables[i][j] for j in range(cols) for i in range(rows)])
 
-for j in range(cols):
-    prob += pulp.lpSum([variables[i][j] for i in range(rows)]) <= 1
+    for i in range(rows):
+        prob += pulp.lpSum([variables[i][j] for j in range(cols)]) <= 1
 
-start_index = keys.index(start_ip)
-end_index = keys.index(end_ip)
+    for j in range(cols):
+        prob += pulp.lpSum([variables[i][j] for i in range(rows)]) <= 1
 
-# incoming connection to a router has to have an outgoing connection
-for i in range(rows):
-    if i != start_index and i != end_index:
-        prob += pulp.lpSum([variables[i][j] for j in range(cols)]) == pulp.lpSum(
-            [variables[j][i] for j in range(rows)])
+    start_index = keys.index(start_ip)
+    end_index = keys.index(end_ip)
 
-# comming connections to start_ip should be zero
-prob += pulp.lpSum([variables[j][start_index] for j in range(cols)]) == 0
+    # incoming connection to a router has to have an outgoing connection
+    for i in range(rows):
+        if i != start_index and i != end_index:
+            prob += pulp.lpSum([variables[i][j] for j in range(cols)]) == pulp.lpSum(
+                [variables[j][i] for j in range(rows)])
 
-# outgoing connections from start_ip should be one
-prob += pulp.lpSum([variables[start_index][j] for j in range(cols)]) == 1
+    # comming connections to start_ip should be zero
+    prob += pulp.lpSum([variables[j][start_index] for j in range(cols)]) == 0
 
-# comming connections to end_ip should be one
-prob += pulp.lpSum([variables[j][end_index] for j in range(cols)]) == 1
+    # outgoing connections from start_ip should be one
+    prob += pulp.lpSum([variables[start_index][j] for j in range(cols)]) == 1
 
-# outgoing connections from end_ip should be zero
-prob += pulp.lpSum([variables[end_index][j] for j in range(cols)]) == 0
+    # comming connections to end_ip should be one
+    prob += pulp.lpSum([variables[j][end_index] for j in range(cols)]) == 1
+
+    # outgoing connections from end_ip should be zero
+    prob += pulp.lpSum([variables[end_index][j] for j in range(cols)]) == 0
 
 
-prob.solve()
+    prob.solve()
 
-print("Minimum Cost =", pulp.value(prob.objective))
-for index, v in enumerate(prob.variables()):
-    if v.varValue>0:
-        print(v.name, "=", v.varValue, end=" ")
-        print()
-    # print(v.name, "=", v.varValue, end=" ")
-    # if index % cols == cols - 1:
-    #     print()
+    print("Minimum Cost =", pulp.value(prob.objective))
+    for index, v in enumerate(prob.variables()):
+        if v.varValue>0:
+            print(v.name, "=", v.varValue, end=" ")
+            print()
+        # print(v.name, "=", v.varValue, end=" ")
+        # if index % cols == cols - 1:
+        #     print()
+    path = [v.name for index, v in enumerate(prob.variables()) if v.varValue>0]
+    for i in range(len(path)):
+        path[i] = {"src": keys[int(path[i][1:].split("_")[0])-1], "dest":keys[int(path[i][1:].split("_")[1])-1]}
+
+    return {"total_cost":pulp.value(prob.objective), "path": path}
+
+res = solve(connections, start_ip, end_ip)
+print(res)
