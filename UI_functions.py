@@ -130,11 +130,19 @@ class MainWidget(BoxLayout):
                     elif self.link_devices[1] == None:
                         self.link_devices[1] = selected_item
                         print("added second device")
-                        print("linking devices...",end=" ")
-                        # link the devices here
                         # clear the backgrounds of the device 1 and 2
                         self.link_devices[0]["widget"].canvas.before.clear()
                         self.link_devices[1]["widget"].canvas.before.clear()
+
+                        # there shouldnt be a link between the two devices already
+                        for conn in MyNetwork.connections:
+                            if (conn["device1"]['item'].ipv4 == self.link_devices[0]['item'].ipv4 and conn["device2"]['item'].ipv4 == self.link_devices[1]['item'].ipv4) or (conn["device1"]['item'].ipv4 == self.link_devices[1]['item'].ipv4 and conn["device2"]['item'].ipv4 == self.link_devices[0]['item'].ipv4):
+                                print("Link already exists")
+                                self.link_devices = [None,None]
+                                return
+
+                        # link the devices here
+                        print("linking devices...",end=" ")
                         
                         device1 = self.link_devices[0]["item"]
                         device2 = self.link_devices[1]["item"]
