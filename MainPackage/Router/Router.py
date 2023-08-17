@@ -31,14 +31,14 @@ class Router:
             interface = Interface(ip, mac = self.arp_table[ip])
             self.interfaces[self.arp_table[ip]] = interface
 
-    def link(self, device):
+    def link(self, device,propagation_speed = 200000000):
         '''
         interface: interface object
         '''
         for interface in self.interfaces.values():
             for device_interface in device.interfaces.values():
                 if interface.link is None and device_interface.link is None:
-                    link = Interface.link(interface.ipv4, device_interface.ipv4)
+                    link = Interface.link(interface.ipv4, device_interface.ipv4,propagation_speed)
                     return link
         return None
     

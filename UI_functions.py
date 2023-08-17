@@ -146,8 +146,21 @@ class MainWidget(BoxLayout):
                         
                         device1 = self.link_devices[0]["item"]
                         device2 = self.link_devices[1]["item"]
-                    
-                        link = device1.link(device2)
+
+                        cost = self.ids.link_cost.text
+                        # regex test
+                        try:
+                            cost = float(cost)
+                        except:
+                            print("Invalid Cost")
+                            self.link_devices = [None,None]
+                            return
+
+                        # propagation_speed = random.randint(100000000, 1000000000)
+                        propagation_speed = 10e6 * cost
+
+
+                        link = device1.link(device2,propagation_speed=propagation_speed)
                         if link != None:
                             print("ok!")
                             # here add a strait line between the two devices
@@ -158,12 +171,19 @@ class MainWidget(BoxLayout):
                                 new_x_2 = self.link_devices[1]["widget"].pos[0] + dp(80)
                                 new_y_2 = self.link_devices[1]["widget"].pos[1] + dp(40) + dp(20*len(self.link_devices[1]['item'].interfaces))
                                 Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
+                                # add on the middle of the line text
+                                Label(text=f"{cost:.2f}",pos=(
+                                    new_x_1 + (new_x_2 - new_x_1)/2 - dp(80),
+                                    new_y_1 + (new_y_2 - new_y_1)/2 + dp(10)
+                                ),font_size=dp(10),color=(0,0,0,1),halign='center',valign='middle',size_hint=(None, None),size=(dp(160), dp(20)))
+
 
                             # add the link to the network
                             MyNetwork.connections.append({
                                 "device1":self.link_devices[0],
                                 "device2":self.link_devices[1],
-                                "link":link
+                                "link":link,
+                                "cost":cost
                                 })
                         else:
                             print("failed! Probably not enaph available ports" )
@@ -300,7 +320,12 @@ class MainWidget(BoxLayout):
                 new_y_2 = connection['device2']["widget"].pos[1] + dp(40) + dp(20*len(connection['device2']['item'].interfaces))
                 
                 Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
-
+                cost = connection["cost"]
+                Label(text=f"{cost:.2f}",pos=(
+                                    new_x_1 + (new_x_2 - new_x_1)/2 - dp(80),
+                                    new_y_1 + (new_y_2 - new_y_1)/2 + dp(10)
+                                ),font_size=dp(10),color=(0,0,0,1),halign='center',valign='middle',size_hint=(None, None),size=(dp(160), dp(20)))
+        
     def on_network_widget_release(self, *args, **kwargs):
         if self.item_type != "": return
 
@@ -339,6 +364,11 @@ class MainWidget(BoxLayout):
                 new_y_2 = (connection['device2']["widget"].pos[1] - center[1])*1.2 + center[1] + dp(40) + dp(20*len(connection['device2']['item'].interfaces))
                 
                 Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
+                cost = connection["cost"]
+                Label(text=f"{cost:.2f}",pos=(
+                                    new_x_1 + (new_x_2 - new_x_1)/2 - dp(80),
+                                    new_y_1 + (new_y_2 - new_y_1)/2 + dp(10)
+                                ),font_size=dp(10),color=(0,0,0,1),halign='center',valign='middle',size_hint=(None, None),size=(dp(160), dp(20)))
         
 
         for index in range(len(MyNetwork.items)):
@@ -368,7 +398,12 @@ class MainWidget(BoxLayout):
                 new_y_2 = (connection['device2']["widget"].pos[1] - center[1])/1.2 + center[1] + dp(40) + dp(20*len(connection['device2']['item'].interfaces))
                 
                 Line(points=[new_x_1,new_y_1,new_x_2,new_y_2], width=dp(2))
-            
+                cost = connection["cost"]
+                Label(text=f"{cost:.2f}",pos=(
+                                    new_x_1 + (new_x_2 - new_x_1)/2 - dp(80),
+                                    new_y_1 + (new_y_2 - new_y_1)/2 + dp(10)
+                                ),font_size=dp(10),color=(0,0,0,1),halign='center',valign='middle',size_hint=(None, None),size=(dp(160), dp(20)))
+        
 
         for index in range(len(MyNetwork.items)):
             item_zip = MyNetwork.items[index]

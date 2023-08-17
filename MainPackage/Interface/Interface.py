@@ -49,11 +49,11 @@ class Interface:
         self.link = link
     
     @staticmethod
-    def link(ipv4_1, ipv4_2):
+    def link(ipv4_1, ipv4_2,propagation_speed = 200000000):
         interface1 = Interface.INSTANCES[ipv4_1]
         interface2 = Interface.INSTANCES[ipv4_2]
         
-        link = LinkFabric(interface1, interface2)
+        link = LinkFabric(interface1, interface2,propagation_speed)
         interface1.connect(link)
         interface2.connect(link)
         return link
