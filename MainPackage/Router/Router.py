@@ -18,6 +18,8 @@ class Router:
         interfaces: list of ipv4 of the interfaces
         mac: mac address of the router
         '''
+        self.traffic_cost = 0
+
         self.ipv4 = ipv4
         self.running = True
 
@@ -52,6 +54,11 @@ class Router:
         for interface in self.interfaces.values():
             interface.stop()
         self.running = False
+    
+    def getTraficCost(self):
+        self.traffic_cost = sum([interface.receive_queue.qsize() for interface in self.interfaces.values()])
+        self.traffic_cost += sum([interface.transmit_queue.qsize() for interface in self.interfaces.values()])
+        return self.traffic_cost
     
     def handle_packets(self):
         while self.running:

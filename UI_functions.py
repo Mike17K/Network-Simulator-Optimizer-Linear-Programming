@@ -1,6 +1,7 @@
 
 from MainPackage.Router.Router import Router
 from MainPackage.Interface.Interface import Interface
+from MainPackage.Packet.Packet import Packet
 
 from analyzeExportConnections import solve
 
@@ -426,6 +427,8 @@ class MainWidget(BoxLayout):
             link = i["link"]
             
             cost = link.propagation_speed/10e6 # TODO make it better baced on the disttance
+            cost += device1.getTraficCost()
+            cost += device2.getTraficCost()
 
             if device1.ipv4 not in costs.keys():
                 costs[device1.ipv4] = {}
@@ -489,4 +492,25 @@ class MainWidget(BoxLayout):
         with open('export.json', 'w') as fp:
             json.dump(costs, fp)
 
+    def loadPackets(self,ip):
+        # load the packets into router with ip
+        router = None
+        for item_zip in MyNetwork.items:
+            if item_zip["type"] == "router" and item_zip["item"].ipv4 == ip:
+                router = item_zip["item"]
+                break
         
+        if router == None:
+            print("Invalid IP")
+            return
+        
+        # packets
+        packets = [Packet('test_ip1', 'test_ip2', "Hello World from 1") for _ in range(5)]
+
+        # load the packets into the router
+        for packet in packets:
+            # put the packets for now on the first interface
+            for key in router.interfaces.keys():
+                router.interfaces[key].transmit_queue.put(packet)
+                break
+

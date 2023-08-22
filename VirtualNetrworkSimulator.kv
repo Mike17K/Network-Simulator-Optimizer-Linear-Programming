@@ -138,6 +138,26 @@ MainWidget:
             size_hint: 1, 1
 
         
+        Label:
+            text: 'Target IPv4'
+            size_hint: 1, None
+            height: '30dp'
+            color: 0, 0, 0, 1
+            
+        TextInput:
+            id: target_router_ip
+            text: ''
+            size_hint: 1, None
+            height: '30dp'
+            multiline: False
+            font_size: '15dp'
+            
+        Button:
+            text: 'SentPackets'
+            on_press: 
+                root.loadPackets(ip = target_router_ip.text)
+            size_hint: 1, None
+            height: '48dp'
         
         Button:
             text: 'Clear'
