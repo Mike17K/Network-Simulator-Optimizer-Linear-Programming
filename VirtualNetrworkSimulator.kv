@@ -48,21 +48,21 @@ MainWidget:
             id: router_button
             text: 'Router'
             on_press: 
-                device_button.state = 'normal'
+                # device_button.state = 'normal'
                 link_button.state = 'normal'
                 root.select_router(self.state)
             size_hint: 1, None
             height: '48dp'
 
-        ToggleButton:
-            id: device_button
-            text: 'End Device'
-            on_press: 
-                router_button.state = 'normal'
-                link_button.state = 'normal'
-                root.select_end_device(self.state)
-            size_hint: 1, None
-            height: '48dp'
+        # ToggleButton:
+        #     id: device_button
+        #     text: 'End Device'
+        #     on_press: 
+        #         router_button.state = 'normal'
+        #         link_button.state = 'normal'
+        #         root.select_end_device(self.state)
+        #     size_hint: 1, None
+        #     height: '48dp'
 
         BoxLayout:
             orientation: 'horizontal'
@@ -75,7 +75,7 @@ MainWidget:
                 text: 'Link'
                 on_press: 
                     router_button.state = 'normal'
-                    device_button.state = 'normal'
+                    # device_button.state = 'normal'
                     root.select_link(self.state)
                 size_hint: 0.5, None
                 height: '48dp'
